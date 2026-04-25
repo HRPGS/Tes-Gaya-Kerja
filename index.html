@@ -536,6 +536,27 @@
             
 //Non-Activated Code            renderResultsPage(currentResultData);
 // Pengganti Non-Activated Code - SEND DATA TO GOOGLE APPS SCRIPT
+console.log("DEBUG DATA:", {
+  Name: currentUser.name,
+  Date: currentResultData?.date,
+
+  adapted: percentages?.M,
+  natural: percentages?.J,
+
+  D_adapted: percentages?.M?.D,
+  I_adapted: percentages?.M?.I,
+  S_adapted: percentages?.M?.S,
+  C_adapted: percentages?.M?.C,
+
+  D_natural: percentages?.J?.D,
+  I_natural: percentages?.J?.I,
+  S_natural: percentages?.J?.S,
+  C_natural: percentages?.J?.C,
+
+  profile_adapted: adaptedProfile,
+  profile_natural: naturalProfile
+});
+
 fetch("https://script.google.com/macros/s/AKfycbxadQ-vDDa8zFk8CiWLAyUDui2j3frBpo7pWkIDxRmfPbwoDRPbpXINg14Qhm67VH7DCw/exec", {
     method: "POST",
     body: JSON.stringify({
@@ -557,14 +578,14 @@ fetch("https://script.google.com/macros/s/AKfycbxadQ-vDDa8zFk8CiWLAyUDui2j3frBpo
 .then(data => {
     document.body.innerHTML = `
         <div style="text-align:center; margin-top:100px; font-family:sans-serif;">
-            <h2>Terima kasih ??</h2>
+            <h2>Terima kasih</h2>
             <p>Jawaban Anda sudah berhasil disimpan.</p>
         </div>
     `;
 })
 .catch(err => {
     console.error(err);
-    alert("Terjadi error saat menyimpan data.");
+    alert("Maaf terjadi error, mohon hubungin HR kami");
 });
         }
 
