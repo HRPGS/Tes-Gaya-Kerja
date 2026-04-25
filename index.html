@@ -599,23 +599,37 @@
                 formData.append('profile_natural', naturalProfile);
                 formData.append('pdfBase64', pdfBase64);
     
-                fetch('https://script.google.com/macros/s/AKfycbz67jQKahXjah02LdLQ1KJknrO4DVfvvyaljTsyjtEysde6io9T5KYRuDjghG2P3zZR/exec', {
+                const payload = {
+                    Name: currentUser.name,
+                    Date: currentResultData.date,
+                    D_adapted: percentages.M.D,
+                    I_adapted: percentages.M.I,
+                    S_adapted: percentages.M.S,
+                    C_adapted: percentages.M.C,
+                    D_natural: percentages.J.D,
+                    I_natural: percentages.J.I,
+                    S_natural: percentages.J.S,
+                    C_natural: percentages.J.C,
+                    profile_adapted: adaptedProfile,
+                    profile_natural: naturalProfile,
+                    pdfBase64: pdfBase64
+                };
+                
+                fetch('https://script.google.com/macros/s/AKfycbww60p0iy3SrFuOBuJL4f-FQiSROFkZY_8HfEqdqK0OuWUCxEhwbSau8JtomwyBykJc/exec', {
                     method: 'POST',
-                    mode: 'no-cors',
-                    body: formData
-                }).catch(err => console.error('Send error:', err))
-                .finally(() => {
-                    // 5. Remove banner when done
+                    // No mode: 'no-cors' — we need to actually read the response
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                })
+                .then(res => res.json())
+                .then(data => {
+                    Logger.log('Apps Script response:', data);
+                    document.getElementById('savingBanner')?.remove();
+                })
+                .catch(err => {
+                    console.error('Send error:', err);
                     document.getElementById('savingBanner')?.remove();
                 });
-    
-            }).catch(err => {
-                console.error('Capture error:', err);
-                document.getElementById('savingBanner')?.remove();
-            });
-    
-        }, 800); // wait for Chart.js to finish rendering
-    }
         function determineProfile(percentages) {
             const scores = Object.entries(percentages).map(([letter, value]) => ({ letter, value }));
             scores.sort((a, b) => b.value - a.value);
