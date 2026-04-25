@@ -534,7 +534,46 @@
                 date: new Date().toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric'})
             };
             
-            // Show thank you page immediately
+            // Build payload
+            const payload = {
+                Name: currentUser.name,
+                Date: currentResultData.date,
+                D_adapted: percentages.M.D,
+                I_adapted: percentages.M.I,
+                S_adapted: percentages.M.S,
+                C_adapted: percentages.M.C,
+                D_natural: percentages.J.D,
+                I_natural: percentages.J.I,
+                S_natural: percentages.J.S,
+                C_natural: percentages.J.C,
+                profile_adapted: adaptedProfile,
+                profile_natural: naturalProfile
+            };
+
+            // Hidden iframe + form submit — bypasses CORS entirely, works from GitHub Pages
+            const iframe = document.createElement('iframe');
+            iframe.name = 'hidden_iframe';
+            iframe.style.display = 'none';
+            document.body.appendChild(iframe);
+
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = 'https://script.google.com/macros/s/AKfycby5xe4I0lyjG6mgsCwkzeKxCe9OazTnvWTfJoV35c-nG4IKHMsTOSAUZnJC0r0wYHk6/exec';
+            form.target = 'hidden_iframe';
+            form.style.display = 'none';
+
+            Object.entries(payload).forEach(([key, value]) => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = key;
+                input.value = value;
+                form.appendChild(input);
+            });
+
+            document.body.appendChild(form);
+            form.submit();
+
+            // Show thank you immediately after submitting
             document.getElementById('assessmentForm').style.display = 'none';
             document.body.innerHTML = `
                 <div style="text-align:center; margin-top:100px; font-family:'Inter',sans-serif;">
@@ -542,28 +581,6 @@
                     <p style="color:#555; margin-top:10px;">Jawaban Anda sudah berhasil disimpan.</p>
                 </div>
             `;
-
-            // Send data in background using no-cors fetch
-            // Apps Script will read e.postData.contents as JSON
-            fetch("https://script.google.com/macros/s/AKfycbwclpX-E_UCpwsTU6BiOgycYezh1h6EbGyiOjmmz6QwFCzfQBwdNwXVyoWpd3Et5_B6/exec", {
-                method: "POST",
-                mode: "no-cors",
-                headers: { "Content-Type": "text/plain;charset=utf-8" },
-                body: JSON.stringify({
-                    Name: currentUser.name,
-                    Date: currentResultData.date,
-                    D_adapted: percentages.M.D,
-                    I_adapted: percentages.M.I,
-                    S_adapted: percentages.M.S,
-                    C_adapted: percentages.M.C,
-                    D_natural: percentages.J.D,
-                    I_natural: percentages.J.I,
-                    S_natural: percentages.J.S,
-                    C_natural: percentages.J.C,
-                    profile_adapted: adaptedProfile,
-                    profile_natural: naturalProfile
-                })
-            }).catch(err => console.error("Send error:", err));
         }
 
         function determineProfile(percentages) {
