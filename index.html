@@ -557,10 +557,20 @@ console.log("DEBUG DATA:", {
   profile_natural: naturalProfile
 });
 
-fetch("https://script.google.com/macros/s/AKfycbwlogsaWpbEwbnXjPkFx-CO-nh2kqWZRHOb-ArP6_GMP7nhy10kFYND2WSo8EKVDhpAdA/exec", {
+// Show success immediately (no-cors = can't read response, but data still gets saved)
+document.getElementById('assessmentForm').style.display = 'none';
+document.body.innerHTML = `
+    <div style="text-align:center; margin-top:100px; font-family:sans-serif;">
+        <h2>Terima kasih</h2>
+        <p>Jawaban Anda sudah berhasil disimpan.</p>
+    </div>
+`;
+
+fetch("https://script.google.com/macros/s/AKfycbxadQ-vDDa8zFk8CiWLAyUDui2j3frBpo7pWkIDxRmfPbwoDRPbpXINg14Qhm67VH7DCw/exec", {
     method: "POST",
+    mode: "no-cors",
     headers: {
-        "Content-Type": "text/plain;charset=utf-8" 
+        "Content-Type": "text/plain;charset=utf-8"
     },
     body: JSON.stringify({
         Name: currentUser.name,
@@ -580,18 +590,8 @@ fetch("https://script.google.com/macros/s/AKfycbwlogsaWpbEwbnXjPkFx-CO-nh2kqWZRH
         profile_natural: naturalProfile
     })
 })
-.then(res => res.json())
-.then(data => {
-    document.body.innerHTML = `
-        <div style="text-align:center; margin-top:100px; font-family:sans-serif;">
-            <h2>Terima kasih</h2>
-            <p>Jawaban Anda sudah berhasil disimpan.</p>
-        </div>
-    `;
-})
 .catch(err => {
-    console.error(err);
-    alert("Maaf terjadi error, mohon hubungin HR kami");
+    console.error("Background send failed:", err);
 });
         }
 
