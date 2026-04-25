@@ -561,15 +561,18 @@ fetch("https://script.google.com/macros/s/AKfycbxadQ-vDDa8zFk8CiWLAyUDui2j3frBpo
     method: "POST",
     body: JSON.stringify({
         Name: currentUser.name,
-        Date: currentResultData.date,
-        D_adapted: percentages.M.D,
-        I_adapted: percentages.M.I,
-        S_adapted: percentages.M.S,
-        C_adapted: percentages.M.C,
-        D_natural: percentages.J.D,
-        I_natural: percentages.J.I,
-        S_natural: percentages.J.S,
-        C_natural: percentages.J.C,
+        Date: currentResultData?.date,
+
+        D_adapted: percentages?.M?.D,
+        I_adapted: percentages?.M?.I,
+        S_adapted: percentages?.M?.S,
+        C_adapted: percentages?.M?.C,
+
+        D_natural: percentages?.J?.D,
+        I_natural: percentages?.J?.I,
+        S_natural: percentages?.J?.S,
+        C_natural: percentages?.J?.C,
+
         profile_adapted: adaptedProfile,
         profile_natural: naturalProfile
     })
