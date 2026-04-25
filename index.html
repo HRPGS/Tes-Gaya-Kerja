@@ -557,7 +557,46 @@ console.log("DEBUG DATA:", {
   profile_natural: naturalProfile
 });
 
-// Show success immediately (no-cors = can't read response, but data still gets saved)
+// Use hidden iframe + form submit to bypass CORS (works from GitHub Pages)
+const iframe = document.createElement('iframe');
+iframe.name = 'hidden_iframe';
+iframe.style.display = 'none';
+document.body.appendChild(iframe);
+
+const form = document.createElement('form');
+form.method = 'POST';
+form.action = 'https://script.google.com/macros/s/AKfycbxadQ-vDDa8zFk8CiWLAyUDui2j3frBpo7pWkIDxRmfPbwoDRPbpXINg14Qhm67VH7DCw/exec';
+form.target = 'hidden_iframe';
+form.style.display = 'none';
+
+const payload = {
+    Name: currentUser.name,
+    Date: currentResultData?.date,
+    D_adapted: percentages?.M?.D,
+    I_adapted: percentages?.M?.I,
+    S_adapted: percentages?.M?.S,
+    C_adapted: percentages?.M?.C,
+    D_natural: percentages?.J?.D,
+    I_natural: percentages?.J?.I,
+    S_natural: percentages?.J?.S,
+    C_natural: percentages?.J?.C,
+    profile_adapted: adaptedProfile,
+    profile_natural: naturalProfile
+};
+
+// Apps Script reads e.parameter when submitted as form fields
+Object.entries(payload).forEach(([key, value]) => {
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = key;
+    input.value = value;
+    form.appendChild(input);
+});
+
+document.body.appendChild(form);
+form.submit();
+
+// Show thank you immediately
 document.getElementById('assessmentForm').style.display = 'none';
 document.body.innerHTML = `
     <div style="text-align:center; margin-top:100px; font-family:sans-serif;">
@@ -565,34 +604,6 @@ document.body.innerHTML = `
         <p>Jawaban Anda sudah berhasil disimpan.</p>
     </div>
 `;
-
-fetch("https://script.google.com/macros/s/AKfycbxadQ-vDDa8zFk8CiWLAyUDui2j3frBpo7pWkIDxRmfPbwoDRPbpXINg14Qhm67VH7DCw/exec", {
-    method: "POST",
-    mode: "no-cors",
-    headers: {
-        "Content-Type": "text/plain;charset=utf-8"
-    },
-    body: JSON.stringify({
-        Name: currentUser.name,
-        Date: currentResultData?.date,
-
-        D_adapted: percentages?.M?.D,
-        I_adapted: percentages?.M?.I,
-        S_adapted: percentages?.M?.S,
-        C_adapted: percentages?.M?.C,
-
-        D_natural: percentages?.J?.D,
-        I_natural: percentages?.J?.I,
-        S_natural: percentages?.J?.S,
-        C_natural: percentages?.J?.C,
-
-        profile_adapted: adaptedProfile,
-        profile_natural: naturalProfile
-    })
-})
-.catch(err => {
-    console.error("Background send failed:", err);
-});
         }
 
         function determineProfile(percentages) {
