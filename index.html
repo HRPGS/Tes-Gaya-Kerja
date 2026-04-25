@@ -507,9 +507,6 @@
         }
 
         function submitAssessment() {
-//Non-Activated Code            document.getElementById('assessmentForm').style.display = 'none';
-//Non-Activated Code            document.getElementById('resultsContainer').classList.remove('hidden');
-            
             const rawScores = { M: { D: 0, I: 0, S: 0, C: 0 }, J: { D: 0, I: 0, S: 0, C: 0 } };
             responses.forEach(res => {
                 if (res.M) rawScores.M[res.M]++;
@@ -521,20 +518,19 @@
                 percentages.M[style] = conversionTable[style]['most'][rawScores.M[style]] || 0;
                 percentages.J[style] = conversionTable[style]['least'][rawScores.J[style]] || 0;
             });
-            
+
             const adaptedProfile = determineProfile(percentages.M);
             const naturalProfile = determineProfile(percentages.J);
-            
+
             currentResultData = {
                 user: currentUser,
                 rawScores,
                 percentages,
                 adaptedProfile,
                 naturalProfile,
-                date: new Date().toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric'})
+                date: new Date().toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' })
             };
-            
-            // Build payload
+
             const payload = {
                 Name: currentUser.name,
                 Date: currentResultData.date,
@@ -550,53 +546,29 @@
                 profile_natural: naturalProfile
             };
 
-            // Hidden iframe + form submit — bypasses CORS entirely, works from GitHub Pages
-            const iframe = document.createElement('iframe');
-            iframe.name = 'hidden_iframe';
-            iframe.style.display = 'none';
-            document.body.appendChild(iframe);
+            // Show thank-you immediately
+            document.getElementById('assessmentForm').style.display = 'none';
+            document.getElementById('mainSection').innerHTML = `
+                <div style="text-align:center; padding: 60px 20px; font-family:'Inter',sans-serif;">
+                    <div style="font-size: 48px; margin-bottom: 16px;">✅</div>
+                    <h2 style="font-size:1.8rem; color:#4f46e5; margin-bottom:8px;">Terima kasih, ${currentUser.name}!</h2>
+                    <p style="color:#555;">Jawaban Anda sudah berhasil disimpan.</p>
+                    <button onclick="location.reload()"
+                        style="margin-top:32px; background:linear-gradient(135deg,#667eea,#764ba2); color:white; border:none; padding:12px 32px; border-radius:999px; font-size:1rem; cursor:pointer;">
+                        Isi Assessment Baru
+                    </button>
+                </div>`;
 
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = 'https://script.google.com/macros/s/AKfycbz92L29eWDMslEbZwltzUo-HOj8mB2CMJGtiCrMwiYOKDjsn57qxPulaKar5KHVodWJ/exec';
-            form.target = 'hidden_iframe';
-            form.style.display = 'none';
+            // Send in background
+            const formData = new FormData();
+            Object.entries(payload).forEach(([key, value]) => formData.append(key, value));
 
-            Object.entries(payload).forEach(([key, value]) => {
-                const input = document.createElement('input');
-                input.type = 'hidden';
-                input.name = key;
-                input.value = value;
-                form.appendChild(input);
-            });
-            
-            document.body.appendChild(form);
-            form.submit();
-
-                        // 3. ONLY after the iframe fires 'load' (Apps Script responded) → show thank-you
-            //    Also set a 10s timeout fallback in case the response is slow
-            let done = false;
-            function showThankyou() {
-                if (done) return;
-                done = true;
-                document.getElementById('assessmentForm').style.display = 'none';
-                document.getElementById('mainSection').innerHTML = `
-                    <div style="text-align:center; padding: 60px 20px; font-family:'Inter',sans-serif;">
-                        <div style="font-size: 48px; margin-bottom: 16px;">✅</div>
-                        <h2 style="font-size:1.8rem; color:#4f46e5; margin-bottom:8px;">Terima kasih, ${currentUser.name}!</h2>
-                        <p style="color:#555; margin-top:10px;">Jawaban Anda sudah berhasil disimpan.</p>
-                        <button 
-                            onclick="location.reload()" 
-                            style="margin-top:32px; background:linear-gradient(135deg,#667eea,#764ba2); color:white; border:none; padding:12px 32px; border-radius:999px; font-size:1rem; cursor:pointer;">
-                            Isi Assessment Baru
-                        </button>
-                    </div>`;
-            }
-        
-            iframe.addEventListener('load', showThankyou);
-            setTimeout(showThankyou, 10000); // fallback: show after 10s regardless
-        }
-
+            fetch('https://script.google.com/macros/s/AKfycbww60p0iy3SrFuOBuJL4f-FQiSROFkZY_8HfEqdqK0OuWUCxEhwbSau8JtomwyBykJc/exec', {
+                method: 'POST',
+                mode: 'no-cors',
+                body: formData
+            }).catch(err => console.error('Submission error:', err));
+        }  // ← this closing brace was missing
         function determineProfile(percentages) {
             const scores = Object.entries(percentages).map(([letter, value]) => ({ letter, value }));
             scores.sort((a, b) => b.value - a.value);
