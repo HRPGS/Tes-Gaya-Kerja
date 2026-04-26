@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DiSC Self-Assessment Platform</title>
+    <title>Tes Gaya Kerja Platform</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Library Chart.js untuk grafik -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -79,7 +79,7 @@
     <div class="container max-w-4xl mx-auto p-4 md:p-5">
         <div id="mainSection" class="card">
             <div class="no-print">
-                <h1 class="text-3xl md:text-4xl font-bold text-center text-indigo-600 mb-2">DiSC Self-Assessment</h1>
+                <h1 class="text-3xl md:text-4xl font-bold text-center text-indigo-600 mb-2">Tes Gaya Kerja</h1>
                 <p class="text-center text-gray-600 mb-8">Temukan profil kepribadian Anda</p>
             </div>
             
@@ -101,6 +101,18 @@
                             <label for="userName" class="block mb-1 font-semibold text-gray-600">Nama Lengkap:</label>
                             <input type="text" id="userName" placeholder="Masukkan nama lengkap Anda" required class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 transition">
                         </div>
+                    // adding Email Item on questionaire
+                    <div>
+                      <label for="userEmail" class="block mb-1 font-semibold text-gray-600">Email:</label>
+                      <input 
+                        type="email" 
+                        id="userEmail" 
+                        placeholder="Masukkan email Anda" 
+                        required 
+                        class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 transition"
+                    >
+                    </div>
+                     // adding Email Item on questionaire
                     </div>
                     <div class="text-center mt-6 no-print">
                         <button class="btn text-white font-bold py-3 px-10 rounded-full text-lg" onclick="startAssessment()">Mulai Assessment</button>
@@ -439,12 +451,21 @@
         let currentResultData = {};
 
         function startAssessment() {
+            // 'Replaced with below'const name = document.getElementById('userName').value.trim();
+            // 'Replaced with below'if (!name) {
+            // 'Replaced with below'    alert('Mohon isi nama lengkap Anda.');
+            // 'Replaced with below'    return;
+            // 'Replaced with below'}
+            // 'Replaced with below' currentUser = { name };
+            // Replace with adding mail
             const name = document.getElementById('userName').value.trim();
-            if (!name) {
-                alert('Mohon isi nama lengkap Anda.');
-                return;
+            const email = document.getElementById('userEmail').value.trim();
+            if (!name || !email) {
+            alert('Mohon isi nama dan email.');
+            return;
             }
-            currentUser = { name };
+            currentUser = { name, email };
+            // Replace with adding mail
             responses = new Array(questions.length).fill(null).map(() => ({ M: null, J: null, selectedM_index: null, selectedJ_index: null }));
             document.getElementById('userInfoForm').style.display = 'none';
             document.getElementById('assessmentForm').style.display = 'block';
@@ -507,9 +528,15 @@
         }
 
         function submitAssessment() {
-            document.getElementById('assessmentForm').style.display = 'none';
-            document.getElementById('resultsContainer').classList.remove('hidden');
-            
+            // Replaced to Bottom  document.getElementById('assessmentForm').style.display = 'none';
+            // Replaced to Bottom  document.getElementById('resultsContainer').classList.remove('hidden');
+            // VALIDATION: cek semua pertanyaan sudah lengkap
+            const incomplete = responses.some(r => !r.M || !r.J);
+            if (incomplete) {
+                alert('Harap mengisi semua pertanyaan.');
+                return; // STOP proses
+            }
+                        
             const rawScores = { M: { D: 0, I: 0, S: 0, C: 0 }, J: { D: 0, I: 0, S: 0, C: 0 } };
             responses.forEach(res => {
                 if (res.M) rawScores.M[res.M]++;
@@ -531,11 +558,52 @@
                 percentages,
                 adaptedProfile,
                 naturalProfile,
-                date: new Date().toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric'})
+                date: new Date().toLocaleDateString('id-ID', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                })
             };
             
-            renderResultsPage(currentResultData);
-        }
+    // REMOVE this line:
+    // renderResultsPage(currentResultData);
+
+    // REPLACE WITH THIS:
+            // Loading Page
+            const mainSection = document.getElementById('mainSection');
+            mainSection.innerHTML = `
+                <div class="text-center p-10">
+                    <p class="text-gray-600">Memproses hasil Anda...</p>
+                </div>
+            `;
+            // Send to Google Script
+            fetch('https://script.google.com/macros/s/AKfycbzw4uFtajRrVRLnOrPEJd11THVbfRMZshzDKlT4_ud7UD884RInifc2_HO5YK5BLd3_Qg/exec', {
+                method: 'POST',
+                body: JSON.stringify(currentResultData)
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    mainSection.innerHTML = `
+                        <div class="text-center p-10">
+                            <h2 class="text-2xl font-bold text-green-600">Terima kasih!</h2>
+                            <p class="text-gray-600 mt-2">Hasil Anda telah diproses.</p>
+                        </div>
+                     `;
+                } else {
+                    throw new Error('API gagal');
+                }
+            })
+            .catch(err => {
+            console.error(err);
+            mainSection.innerHTML = `
+                <div class="text-center p-10">
+                    <h2 class="text-xl text-red-600">Terjadi kesalahan</h2>
+                    <p class="text-gray-600 mt-2">Silakan coba lagi.</p>
+                </div>
+            `;
+        });
+    }
 
         function determineProfile(percentages) {
             const scores = Object.entries(percentages).map(([letter, value]) => ({ letter, value }));
