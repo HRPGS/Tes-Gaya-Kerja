@@ -3,12 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tes Gaya Kerja</title>
+    <title>DiSC Self-Assessment Platform</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Library Chart.js untuk grafik -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
         body {
@@ -81,7 +79,7 @@
     <div class="container max-w-4xl mx-auto p-4 md:p-5">
         <div id="mainSection" class="card">
             <div class="no-print">
-                <h1 class="text-3xl md:text-4xl font-bold text-center text-indigo-600 mb-2">Tes Gaya Kerja</h1>
+                <h1 class="text-3xl md:text-4xl font-bold text-center text-indigo-600 mb-2">DiSC Self-Assessment</h1>
                 <p class="text-center text-gray-600 mb-8">Temukan profil kepribadian Anda</p>
             </div>
             
@@ -509,127 +507,36 @@
         }
 
         function submitAssessment() {
-        const rawScores = { M: { D: 0, I: 0, S: 0, C: 0 }, J: { D: 0, I: 0, S: 0, C: 0 } };
-        responses.forEach(res => {
-            if (res.M) rawScores.M[res.M]++;
-            if (res.J) rawScores.J[res.J]++;
-        });
-    
-        const percentages = { M: {}, J: {} };
-        ['D', 'I', 'S', 'C'].forEach(style => {
-            percentages.M[style] = conversionTable[style]['most'][rawScores.M[style]] || 0;
-            percentages.J[style] = conversionTable[style]['least'][rawScores.J[style]] || 0;
-        });
-    
-        const adaptedProfile = determineProfile(percentages.M);
-        const naturalProfile = determineProfile(percentages.J);
-    
-        currentResultData = {
-            user: currentUser,
-            rawScores,
-            percentages,
-            adaptedProfile,
-            naturalProfile,
-            date: new Date().toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' })
-        };
-    
-        // 1. Show results page first so html2canvas can capture it
-        document.getElementById('assessmentForm').style.display = 'none';
-        document.getElementById('resultsContainer').classList.remove('hidden');
-        renderResultsPage(currentResultData);
-    
-        // 2. Show a saving indicator
-        const savingBanner = document.createElement('div');
-        savingBanner.id = 'savingBanner';
-        savingBanner.className = 'no-print';
-        savingBanner.innerHTML = `
-            <div style="position:fixed; top:0; left:0; width:100%; background:#4f46e5; color:white; text-align:center; padding:12px; font-family:'Inter',sans-serif; font-size:1rem; z-index:9999;">
-                ⏳ Menyimpan hasil Anda ke Drive...
-            </div>`;
-        document.body.appendChild(savingBanner);
-    
-        // 3. Wait for charts to render, then capture
-        setTimeout(() => {
-            const target = document.getElementById('resultsContainer');
-    
-            html2canvas(target, {
-                scale: 2,
-                useCORS: true,
-                allowTaint: true,
-                scrollY: 0,
-                windowWidth: target.scrollWidth,
-                windowHeight: target.scrollHeight
-            }).then(canvas => {
-                const { jsPDF } = window.jspdf;
-                const pdf = new jsPDF('p', 'mm', 'a4');
-    
-                const pageWidth = pdf.internal.pageSize.getWidth();
-                const pageHeight = pdf.internal.pageSize.getHeight();
-                const imgWidth = pageWidth;
-                const imgHeight = (canvas.height * imgWidth) / canvas.width;
-    
-                // Split into multiple pages if content is tall
-                let yOffset = 0;
-                while (yOffset < imgHeight) {
-                    if (yOffset > 0) pdf.addPage();
-                    pdf.addImage(
-                        canvas.toDataURL('image/jpeg', 0.85),
-                        'JPEG',
-                        0, -yOffset,
-                        imgWidth, imgHeight
-                    );
-                    yOffset += pageHeight;
-                }
-    
-                // 4. Send to Apps Script as base64
-                const pdfBase64 = pdf.output('datauristring').split(',')[1];
-    
-                const formData = new FormData();
-                formData.append('Name', currentUser.name);
-                formData.append('Date', currentResultData.date);
-                formData.append('D_adapted', percentages.M.D);
-                formData.append('I_adapted', percentages.M.I);
-                formData.append('S_adapted', percentages.M.S);
-                formData.append('C_adapted', percentages.M.C);
-                formData.append('D_natural', percentages.J.D);
-                formData.append('I_natural', percentages.J.I);
-                formData.append('S_natural', percentages.J.S);
-                formData.append('C_natural', percentages.J.C);
-                formData.append('profile_adapted', adaptedProfile);
-                formData.append('profile_natural', naturalProfile);
-                formData.append('pdfBase64', pdfBase64);
-    
-                const payload = {
-                    Name: currentUser.name,
-                    Date: currentResultData.date,
-                    D_adapted: percentages.M.D,
-                    I_adapted: percentages.M.I,
-                    S_adapted: percentages.M.S,
-                    C_adapted: percentages.M.C,
-                    D_natural: percentages.J.D,
-                    I_natural: percentages.J.I,
-                    S_natural: percentages.J.S,
-                    C_natural: percentages.J.C,
-                    profile_adapted: adaptedProfile,
-                    profile_natural: naturalProfile,
-                    pdfBase64: pdfBase64
-                };
-                
-                fetch('https://script.google.com/macros/s/AKfycbz67jQKahXjah02LdLQ1KJknrO4DVfvvyaljTsyjtEysde6io9T5KYRuDjghG2P3zZR/exec', {
-                    method: 'POST',
-                    // No mode: 'no-cors' — we need to actually read the response
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                })
-                .then(res => res.json())
-                .then(data => {
-                    Logger.log('Apps Script response:', data);
-                    document.getElementById('savingBanner')?.remove();
-                })
-                .catch(err => {
-                    console.error('Send error:', err);
-                    document.getElementById('savingBanner')?.remove();
-                });
+            document.getElementById('assessmentForm').style.display = 'none';
+            document.getElementById('resultsContainer').classList.remove('hidden');
+            
+            const rawScores = { M: { D: 0, I: 0, S: 0, C: 0 }, J: { D: 0, I: 0, S: 0, C: 0 } };
+            responses.forEach(res => {
+                if (res.M) rawScores.M[res.M]++;
+                if (res.J) rawScores.J[res.J]++;
+            });
+
+            const percentages = { M: {}, J: {} };
+            ['D', 'I', 'S', 'C'].forEach(style => {
+                percentages.M[style] = conversionTable[style]['most'][rawScores.M[style]] || 0;
+                percentages.J[style] = conversionTable[style]['least'][rawScores.J[style]] || 0;
+            });
+            
+            const adaptedProfile = determineProfile(percentages.M);
+            const naturalProfile = determineProfile(percentages.J);
+            
+            currentResultData = {
+                user: currentUser,
+                rawScores,
+                percentages,
+                adaptedProfile,
+                naturalProfile,
+                date: new Date().toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric'})
+            };
+            
+            renderResultsPage(currentResultData);
+        }
+
         function determineProfile(percentages) {
             const scores = Object.entries(percentages).map(([letter, value]) => ({ letter, value }));
             scores.sort((a, b) => b.value - a.value);
