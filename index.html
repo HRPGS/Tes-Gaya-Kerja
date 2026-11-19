@@ -73,6 +73,25 @@
                 page-break-inside: avoid;
             }
         }
+        /* Highlight incomplete questions */
+.question-card.incomplete {
+    border: 2px solid #ef4444;
+    background-color: #fef2f2;
+    animation: highlightPulse 0.6s ease-in-out;
+}
+
+.incomplete-message {
+    color: #dc2626;
+    font-size: 14px;
+    font-weight: 600;
+    margin-top: 12px;
+}
+
+@keyframes highlightPulse {
+    0% { background-color: #ffffff; }
+    50% { background-color: #fee2e2; }
+    100% { background-color: #fef2f2; }
+}
     </style>
 </head>
 <body class="bg-gray-100">
@@ -130,7 +149,9 @@
                     </div>
                     <div id="questionsContainer" class="space-y-5"></div>
                     <div class="text-center mt-8">
-                        <button id="submitButton" class="btn text-white font-bold py-3 px-10 rounded-full text-lg" onclick="submitAssessment()" disabled>Selesai & Lihat Hasil</button>
+                        <button id="submitButton" class="btn text-white font-bold py-3 px-10 rounded-full text-lg" onclick="submitAssessment()">
+    Selesai
+</button>
                     </div>
                 </div>
 
@@ -529,22 +550,91 @@ if (!emailPattern.test(email)) {
         }
 
         function updateProgress() {
-            const answered = responses.filter(r => r.M && r.J).length;
-            const progress = (answered / questions.length) * 100;
-            document.getElementById('progressBar').style.width = progress + '%';
-            document.getElementById('progressText').textContent = `Pertanyaan ${answered} dari ${questions.length} selesai`;
-            document.getElementById('submitButton').disabled = answered !== questions.length;
+    const answered = responses.filter(r => r.M && r.J).length;
+    const progress = (answered / questions.length) * 100;
+
+    document.getElementById('progressBar').style.width = progress + '%';
+
+    document.getElementById('progressText').textContent =
+        `Pertanyaan ${answered} dari ${questions.length} selesai`;
+
+    // Remove highlight when a question is completed
+    responses.forEach((response, index) => {
+        const questionCard = document.querySelectorAll('.question-card')[index];
+
+        if (questionCard && response.M && response.J) {
+            questionCard.classList.remove('incomplete');
+
+            const message = questionCard.querySelector('.incomplete-message');
+            if (message) message.remove();
         }
+    });
+}
 
         function submitAssessment() {
             // Replaced to Bottom  document.getElementById('assessmentForm').style.display = 'none';
             // Replaced to Bottom  document.getElementById('resultsContainer').classList.remove('hidden');
             // VALIDATION: cek semua pertanyaan sudah lengkap
-            const incomplete = responses.some(r => !r.M || !r.J);
-            if (incomplete) {
-                alert('Harap mengisi semua pertanyaan.');
-                return; // STOP proses
-            }
+            // Check incomplete questions
+const incompleteQuestions = [];
+
+responses.forEach((response, index) => {
+    if (!response.M || !response.J) {
+        incompleteQuestions.push(index);
+    }
+});
+
+if (incompleteQuestions.length > 0) {
+
+    // Remove previous highlights and messages
+    document.querySelectorAll('.question-card').forEach(card => {
+        card.classList.remove('incomplete');
+
+        const oldMessage = card.querySelector('.incomplete-message');
+        if (oldMessage) oldMessage.remove();
+    });
+
+    // Highlight incomplete questions
+    incompleteQuestions.forEach(index => {
+        const questionCard =
+            document.querySelectorAll('.question-card')[index];
+
+        questionCard.classList.add('incomplete');
+
+        const message = document.createElement('p');
+        message.className = 'incomplete-message';
+
+        const response = responses[index];
+
+        if (!response.M && !response.J) {
+            message.textContent =
+                'Belum memilih Paling Sesuai dan Paling Tidak Sesuai.';
+        } else if (!response.M) {
+            message.textContent =
+                'Belum memilih pernyataan Paling Sesuai.';
+        } else {
+            message.textContent =
+                'Belum memilih pernyataan Paling Tidak Sesuai.';
+        }
+
+        questionCard.appendChild(message);
+    });
+
+    alert(
+        `Masih ada ${incompleteQuestions.length} pertanyaan yang belum lengkap. Silakan periksa bagian yang ditandai merah.`
+    );
+
+    // Scroll to first incomplete question
+    const firstIncomplete =
+        document.querySelectorAll('.question-card')[incompleteQuestions[0]];
+
+    firstIncomplete.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center'
+    });
+
+    return;
+}
                         
             const rawScores = { M: { D: 0, I: 0, S: 0, C: 0 }, J: { D: 0, I: 0, S: 0, C: 0 } };
             responses.forEach(res => {
