@@ -134,6 +134,31 @@
                         class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 transition"
                     >
                     </div>
+                        <div>
+    <label for="userNIK" class="block mb-1 font-semibold text-gray-600">
+        NIK sesuai KTP:
+    </label>
+    <input
+        type="text"
+        id="userNIK"
+        placeholder="Masukkan 16 digit NIK"
+        maxlength="16"
+        inputmode="numeric"
+        required
+        class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 transition">
+</div>
+
+<div>
+    <label for="userPosisi" class="block mb-1 font-semibold text-gray-600">
+        Posisi yang Didaftarkan:
+    </label>
+    <input
+        type="text"
+        id="userPosition"
+        placeholder="Masukkan posisi yang didaftarkan"
+        required
+        class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 transition">
+</div>
                     </div>
                     <div class="text-center mt-6 no-print">
                         <button class="btn text-white font-bold py-3 px-10 rounded-full text-lg" onclick="startAssessment()">Mulai Tes</button>
@@ -487,21 +512,34 @@
         function startAssessment() {
     const name = document.getElementById('userName').value.trim();
     const email = document.getElementById('userEmail').value.trim();
-    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const nik = document.getElementById('userNIK').value.trim();
+    const position = document.getElementById('userPosition').value.trim();
 
-    if (!name || !email) {
-        alert('Mohon isi nama dan email.');
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const nikPattern = /^\d{16}$/;
+
+    if (!name || !email || !nik || !position) {
+        alert('Mohon lengkapi seluruh informasi peserta.');
         return;
     }
 
     if (!emailPattern.test(email)) {
-        alert('Format email tidak valid. Mohon periksa kembali email Anda.');
+        alert('Format email tidak valid.');
         return;
     }
 
-    currentUser = { name, email };
+    if (!nikPattern.test(nik)) {
+        alert('NIK harus terdiri dari 16 digit angka.');
+        return;
+    }
 
-    // Initialize only when starting a new assessment
+    currentUser = {
+        name: name,
+        email: email,
+        nik: nik,
+        position: position
+    };
+
     if (responses.length !== questions.length) {
         responses = new Array(questions.length)
             .fill(null)
@@ -529,9 +567,10 @@
     document.getElementById('assessmentForm').style.display = 'none';
     document.getElementById('userInfoForm').style.display = 'block';
 
-    // Keep participant information
     document.getElementById('userName').value = currentUser.name || '';
     document.getElementById('userEmail').value = currentUser.email || '';
+    document.getElementById('userNIK').value = currentUser.nik || '';
+    document.getElementById('userPosition').value = currentUser.position || '';
 
     document.getElementById('userInfoForm').scrollIntoView({
         behavior: 'smooth',
