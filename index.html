@@ -651,18 +651,26 @@ if (incompleteQuestions.length > 0) {
             const adaptedProfile = determineProfile(percentages.M);
             const naturalProfile = determineProfile(percentages.J);
             
-            currentResultData = {
-                user: currentUser,
-                rawScores,
-                percentages,
-                adaptedProfile,
-                naturalProfile,
-                date: new Date().toLocaleDateString('id-ID', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
-                })
-            };
+            
+currentResultData = {
+    user: currentUser,
+    rawScores,
+    percentages,
+    adaptedProfile,
+    naturalProfile,
+
+    gapAnalysis: analyzeGapsData(
+        percentages.M,
+        percentages.J
+    ),
+
+    date: new Date().toLocaleDateString('id-ID', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    })
+};
+
             
     // REMOVE this line:
     // renderResultsPage(currentResultData);
@@ -780,6 +788,83 @@ if (incompleteQuestions.length > 0) {
             analysisHTML += `<div class="mt-6 p-4 bg-indigo-50 rounded-lg"><strong class="font-semibold text-indigo-800">Ringkasan Adaptasi:</strong><p class="text-indigo-700 mt-1">${summary}</p></div>`;
             return analysisHTML;
         };
+
+        
+function analyzeGapsData(adapted, natural) {
+
+    const result = {
+        D: {},
+        I: {},
+        S: {},
+        C: {}
+    };
+
+    const gaps = {};
+
+    ['D', 'I', 'S', 'C'].forEach(style => {
+
+        const gap = adapted[style] - natural[style];
+        const absGap = Math.abs(gap);
+
+        let classification = '';
+
+        if (absGap < 10) {
+            classification = 'Gap Kecil';
+        } else if (absGap < 20) {
+            classification = 'Gap Sedang';
+        } else if (absGap < 30) {
+            classification = 'Gap Besar';
+        } else {
+            classification = 'Gap Sangat Besar';
+        }
+
+        let description =
+            `Gaya ${style} sama di kedua kondisi (${adapted[style]}%)`;
+
+        if (gap > 0) {
+            description =
+                `Gaya ${style} lebih tinggi di Adaptasi (${adapted[style]}%) dibanding Natural (${natural[style]}%)`;
+        } else if (gap < 0) {
+            description =
+                `Gaya ${style} lebih tinggi di Natural (${natural[style]}%) dibanding Adaptasi (${adapted[style]}%)`;
+        }
+
+        result[style] = {
+            classification: classification,
+            description: description
+        };
+
+        gaps[style] = gap;
+
+    });
+
+    const avgGap = Object.values(gaps)
+        .reduce((sum, gap) => sum + Math.abs(gap), 0) / 4;
+
+    let summary = '';
+
+    if (avgGap < 10) {
+
+        summary =
+            'Anda memiliki perilaku yang sangat konsisten di berbagai situasi. Gaya natural dan adaptasi Anda tidak banyak berbeda, menunjukkan Anda merasa nyaman menjadi diri sendiri.';
+
+    } else if (avgGap < 20) {
+
+        summary =
+            'Anda menunjukkan fleksibilitas perilaku yang sehat. Ada kemampuan adaptasi yang wajar untuk menyesuaikan diri dengan lingkungan tanpa kehilangan identitas natural.';
+
+    } else {
+
+        summary =
+            'Anda memiliki kemampuan adaptasi perilaku yang sangat tinggi. Ini menunjukkan fleksibilitas yang luar biasa, namun perhatikan apakah ini menimbulkan kelelahan atau stres dalam jangka panjang karena adanya perbedaan signifikan antara diri Anda yang natural dan yang Anda tampilkan.';
+
+    }
+
+    result.summary = summary;
+
+    return result;
+}
+
 
         function renderResultsPage({ user, naturalProfile, adaptedProfile, percentages, date, rawScores }) {
             const container = document.getElementById('interpretationContainer');
